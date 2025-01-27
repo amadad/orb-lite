@@ -24,21 +24,18 @@ Join our [Pippin Developer Hub on Discord](https://discord.gg/BJsZvZB8) to conne
 ---
 ## **Features**
 
-// ... existing code ...
----
-## **Features**
-
 - **Dynamic Tool Creation**: Automatically creates and registers tools to accomplish user-defined tasks.
 - **Composio Integration**: Enables advanced workflows and seamless app integration using Composio tools.
 - **Authentication Management**: Detects available API keys dynamically for various integrations.
 - **Package Installation**: Automatically installs required Python packages during tool creation.
-- **Error Handling**: Gracefully handles errors and iterates to complete tasks.
+- **Error Handling**: Gracefully handles errors and iterates to complete tasks, including retries on timeouts and robust error management.
 - **Dynamic Execution**: Iteratively builds, registers, and utilizes tools during runtime.
 - **Minimalistic Design**: Designed as a lightweight introduction to autonomous agent workflows.
 - **Human-in-the-Loop Break**:  Prevents endless loops by detecting when the agent is stuck and prompting the user to:
     - Continue iterations
     - Redirect the agent with new instructions
     - Stop the task
+- **Post-Task Completion Prompt**: After a task is completed, the agent will prompt you to continue with a new task or exit.
 
 ---
 
@@ -46,27 +43,27 @@ Join our [Pippin Developer Hub on Discord](https://discord.gg/BJsZvZB8) to conne
 
 ### **Prerequisites**
 
-- Python 3.8 or higher
-- `pip` package manager
+- Python 3.11 or higher
+- `uv` package manager
 
 ### **Installation**
 
 1. **Clone the Repository**
    ```bash
-   git clone https://github.com/pippinlovesyou/pippin-lite.git
-   cd pippin-lite
+   git clone https://github.com/amadad/orb-lite.git
+   cd orb-lite
    ```
 
 2. **Create a Virtual Environment (Optional)**
    ```bash
-   python3 -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   uv venv
+   source .venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
 3. **Install Dependencies using uv (fast and modern)**
    ```bash
    pip install uv  # Install uv if you don't have it
-   uv pip install
+   uv sync
    ```
    *(uv will automatically detect and use `pyproject.toml` and your lock file if present)*
 
@@ -92,7 +89,13 @@ Join our [Pippin Developer Hub on Discord](https://discord.gg/BJsZvZB8) to conne
    When prompted, enter a task description. The agent will dynamically create tools and attempt to solve the task.
 
 3. **Monitor Progress**
-   Progress updates will be displayed in the console. Once the task is completed, you will see a "Task completed" message.
+   Progress updates will be displayed in the console.
+
+4. **Post-Task Prompt**:
+   Once the task is completed, you will see a "Task completed" message, followed by a prompt asking if you want to:
+    - Continue with a new task
+    - Exit the application
+   Choose option '1' to provide a new task description and continue, or '2' to exit.
 
 ### **Example Tasks**
 - Summarize news headlines from a website.
@@ -105,7 +108,7 @@ Join our [Pippin Developer Hub on Discord](https://discord.gg/BJsZvZB8) to conne
 
 - **Dynamic Toolset**: Uses Composio tools for workflows and dynamic action execution.
 - **LiteLLM Integration**: Manages AI interactions via [LiteLLM](https://github.com/litellm).
-- **Error Recovery**: Automatically retries failed tool executions.
+- **Error Recovery**: Automatically retries failed tool executions and handles various error types gracefully.
 - **Self-Building Agent**: Dynamically creates tools to handle unforeseen tasks.
 
 ---

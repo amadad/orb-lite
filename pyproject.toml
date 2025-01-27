@@ -3,7 +3,7 @@ name = "orb-lite"
 version = "0.1.0"
 description = "a minimalistic template for dynamic self-building AI agents"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.11,<3.13"
 dependencies = [
     "composio-openai>=0.6.18",
     "langchain-core>=0.3.31",
