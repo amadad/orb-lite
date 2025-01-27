@@ -18,6 +18,7 @@ class Colors:
 MODEL_NAME = os.environ.get('LITELLM_MODEL', 'gpt-4o')
 tools, available_functions = [], {}
 MAX_TOOL_OUTPUT_LENGTH = 5000  # Adjust as needed
+MAX_ITERATIONS_BEFORE_BREAK = 10 # Break loop after this many iterations without tool calls
 
 # Automatically detect available API keys
 api_key_patterns = ['API_KEY', 'ACCESS_TOKEN', 'SECRET_KEY', 'TOKEN', 'APISECRET']
@@ -87,7 +88,7 @@ def task_completed():
 register_tool("create_or_update_tool", create_or_update_tool, "Creates or updates a tool with the specified name, code, description, and parameters.", {
     "name": {"type": "string", "description": "The tool name."},
     "code": {"type": "string", "description": "The Python code for the tool."},
-    "description": {"ty pe": "string", "description": "A description of the tool."},
+    "description": {"type": "string", "description": "A description of the tool."},
     "parameters": {
         "type": "object",
         "description": "A dictionary defining the parameters for the tool.",
@@ -139,7 +140,7 @@ PRIMARY WORKFLOW:
    - Search for available tools using the usecase parameter
    - Select appropriate tool_name based on the task requirements
    - List and select relevant actions for the chosen tool
-   - Execute actions with proper parameters. 
+   - Execute actions with proper parameters.
    - Handle authentication flows when required
    - When retrieving apps, pass only the usecase parameter
    - When using Composio Execute Action to execute a tool specific action , you need to pass the params for example '{action_name: "GOOGLEDOCS_CREATE_DOCUMENT", request: {title: "doc", text: "Initial text for the document."}}'
@@ -193,6 +194,8 @@ Remember to provide all required parameters for function calls and maintain awar
         )
     }, {"role": "user", "content": user_input}]
     iteration, max_iterations = 0, 50
+    iterations_without_tool_call = 0 # Initialize counter for iterations without tool calls
+    last_agent_message_content = None # Store the last content message from the agent
     while iteration < max_iterations:
         print(f"{Colors.HEADER}{Colors.BOLD}Iteration {iteration + 1} running...{Colors.ENDC}")
         try:
@@ -200,8 +203,10 @@ Remember to provide all required parameters for function calls and maintain awar
             response_message = response.choices[0].message
             if response_message.content:
                 print(f"{Colors.OKCYAN}{Colors.BOLD}LLM Response:{Colors.ENDC}\n{response_message.content}\n")
+                last_agent_message_content = response_message.content # Store the content
             messages.append(response_message)
             if response_message.tool_calls:
+                iterations_without_tool_call = 0 # Reset counter because a tool was called
                 for tool_call in response_message.tool_calls:
                     function_name = tool_call.function.name
                     args = json.loads(tool_call.function.arguments)
@@ -216,6 +221,24 @@ Remember to provide all required parameters for function calls and maintain awar
                 if 'task_completed' in [tc.function.name for tc in response_message.tool_calls]:
                     print(f"{Colors.OKGREEN}{Colors.BOLD}Task completed.{Colors.ENDC}")
                     break
+            else:
+                iterations_without_tool_call += 1 # Increment counter if no tool call
+                if iterations_without_tool_call >= MAX_ITERATIONS_BEFORE_BREAK: # Check if limit reached
+                    print(f"{Colors.WARNING}{Colors.BOLD}Possible loop detected. Agent message:{Colors.ENDC}\n\"{last_agent_message_content}\"\n") # Print last agent message
+                    user_break_input = input(f"""{Colors.WARNING}{Colors.BOLD}Choose action:{Colors.ENDC}
+                    1: Continue iteration
+                    2: Redirect agent with new instructions
+                    3: Stop task
+                    Enter choice (1, 2, or 3): """)
+                    if user_break_input == '2':
+                        new_instruction = input("Enter new instructions for the agent: ")
+                        messages.append({"role": "user", "content": new_instruction}) # Add new user message
+                        iterations_without_tool_call = 0 # Reset counter
+                    elif user_break_input == '3':
+                        print(f"{Colors.WARNING}{Colors.BOLD}Breaking loop and stopping task based on user input.{Colors.ENDC}")
+                        break
+                    else: # Default to continue (or if user enters '1')
+                        iterations_without_tool_call = 0 # Reset counter if user wants to continue
         except Exception as e:
             print(f"{Colors.FAIL}{Colors.BOLD}Error:{Colors.ENDC} Error in main loop: {e}")
             traceback.print_exc()
